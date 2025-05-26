@@ -1,0 +1,61 @@
+def unify(x, y, theta={}):
+    if theta is None:
+        return None
+    elif x == y:
+        return theta
+    elif isinstance(x, str) and x.islower():  # x is a variable
+        return unify_var(x, y, theta)
+    elif isinstance(y, str) and y.islower():  # y is a variable
+        return unify_var(y, x, theta)
+    elif isinstance(x, list) and isinstance(y, list) and len(x) == len(y):
+        return unify(x[1:], y[1:], unify(x[0], y[0], theta))
+    else:
+        return None
+
+def unify_var(var, x, theta):
+    if var in theta:
+        return unify(theta[var], x, theta)
+    elif x in theta:
+        return unify(var, theta[x], theta)
+    else:
+        theta[var] = x
+        return theta
+
+def resolution(kb, query):
+    for clause in kb:
+        head = clause[0]
+        body = clause[1:]
+        theta = unify(head, query, {})
+        if theta is not None:
+            if not body:
+                return True
+            else:
+                new_query = [substitute(q, theta) for q in body]
+                if all(resolution(kb, q) for q in new_query):
+                    return True
+    return False
+
+def substitute(expr, theta):
+    if isinstance(expr, list):
+        return [substitute(e, theta) for e in expr]
+    elif isinstance(expr, str) and expr in theta:
+        return theta[expr]
+    else:
+        return expr
+
+# Knowledge base
+knowledge_base = [
+    [["Human", "x"], ["Mortal", "x"]]  # Human(x) => Mortal(x)
+]
+
+# Add fact: Human(John)
+knowledge_base.append([["Human", "John"]])
+
+# Query
+query = ["Mortal", "John"]
+
+# Run resolution
+if resolution(knowledge_base, query):
+    print("Query is resolved: John is Mortal")
+else:
+    print("Query could not be resolved")
